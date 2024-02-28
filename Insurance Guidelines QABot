@@ -1,0 +1,80 @@
+import streamlit as st
+import os
+from lyzr import QABot
+
+os.environ['OPENAI_API_KEY'] = 'sk-'
+
+def initialize_qa_bot(pdf_file_path):
+    vector_store_params = {
+        "vector_store_type": "WeaviateVectorStore",
+        "index_name": "IndexName"  
+    }
+    qa_bot = QABot.pdf_qa(
+        input_files=[pdf_file_path],
+        vector_store_params=vector_store_params,
+    )
+    return qa_bot
+
+def main():
+    st.set_page_config(
+        page_title="Insurance Guideline QABot",
+        page_icon=":shield:",
+        layout="wide",
+        initial_sidebar_state="expanded"  
+    )
+    st.markdown(
+        """
+        <style>
+        body {
+            background-color: #87CEEB; 
+            color: #FFFFFF;
+        }
+        .stApp {
+            background-color: rgba(0, 0, 0, 0.8); 
+            color: #FFFFFF; 
+        }
+        .stTextInput > div > div > input {
+            color: #FFFFFF; 
+        }
+        .stButton {
+            background-color: #4CAF50; 
+            color: #FFFFFF; 
+        }
+        .stButton:hover {
+            background-color: #45a049; 
+        }
+        .stMarkdown {
+            color: #FFFFFF; 
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.title("Insurance Guideline QABot")
+
+    uploaded_file = st.sidebar.file_uploader("Upload Insurance Guidelines PDF", type="pdf", help="Please upload a PDF file.")
+
+    if uploaded_file is not None:
+        
+        with open("temp.pdf", "wb") as f:
+            f.write(uploaded_file.getbuffer())
+
+        qa_bot = initialize_qa_bot("temp.pdf")
+
+        user_question = st.text_input("Ask your question about insurance guidelines:")
+
+        if st.button("Get Answer"):
+            response = qa_bot.query(user_question)
+
+            st.subheader("Answer:")
+            st.write(response.response)
+
+            if response.source_nodes:
+                st.subheader("Source Nodes:")
+                for n, source in enumerate(response.source_nodes):
+                    st.write(f"Source {n+1}: {source.text}")
+
+if __name__ == "__main__":
+    main()
+
